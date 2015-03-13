@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Performance Benchmark Demo</title>
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <link rel="import" href="../performance-benchmark.html">
+  </head>
+  <body>
+
+    <performance-benchmark runs-per-test="100" auto-start>
+
+      <template data-name="Computing the answer to life, the universe and everything.">
+        <script>
+          StartTest();
+          var a = 0, b = 1, n = 9999999, t;
+          while (n-- > 0) {
+            t = a;
+            a = b;
+            b += t;
+          }
+          EndTest();
+        </script>
+      </template>
+
+      <template data-name="Native button disabled behavior.">
+        <button id="NativeButton">Native Button</button>
+        <script>
+          StartTest();
+          NativeButton.disabled = true;
+          NativeButton.removeAttribute('disabled');
+          EndTest();
+        </script>
+      </template>
+
+      <template data-name="Control test that ends immediately.">
+        <script>
+          StartTest();
+          EndTest();
+        </script>
+      </template>
+
+    </performance-benchmark>
+
+  </body>
+</html>

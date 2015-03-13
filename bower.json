@@ -1,0 +1,15 @@
+{
+  "name": "performance-benchmark",
+  "version": "0.0.1",
+  "authors": [
+    "Chris Joel <cdata@google.com>",
+    "Polymer Authors"
+  ],
+  "dependencies": {
+    "font-roboto": "polymer/font-roboto#~0.5.5",
+    "paper-shadow": "polymer/paper-shadow#0.8-preview",
+    "d3": "~3.5.5",
+    "polymer": "polymer/polymer#0.8-preview",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#~0.5.5"
+  }
+}

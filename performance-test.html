@@ -1,0 +1,215 @@
+<script src="../d3/d3.js"></script>
+
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-shadow/paper-shadow.html">
+<link rel="import" href="../font-roboto/roboto.html">
+<link rel="import" href="../layout/layout.html">
+
+<link rel="stylesheet" href="./charts/sparkline.css">
+<script src="./charts/sparkline.js"></script>
+
+<dom-module id="performance-test">
+  <style>
+    :host {
+      display: block;
+      position: relative;
+      overflow: visible;
+    }
+
+    :host h1 {
+      font-family: RobotoDraft;
+    }
+
+    :host #chart-container {
+      display: block;
+      position: relative;
+      height: 50px;
+    }
+
+    :host .card {
+      position: relative;
+      font-family: RobotoDraft, sans-serif;
+      transition: opacity 0.5s cubic-bezier(.44,.13,.18,.99);
+    }
+
+    :host([complete]) .card {
+      opacity: 0.65;
+    }
+
+    :host .card paper-shadow {
+      border-radius: 2px;
+    }
+
+    :host .card > header {
+      margin: 0;
+      padding: 10px;
+      color: #333;
+    }
+
+    :host .card > header h1,
+    :host .card > header span {
+      margin: 0;
+      font-size: 1em;
+    }
+
+    :host .card > header span {
+      text-align: right;
+    }
+  </style>
+  <template>
+    <section class="card">
+      <header class="flex layout horizontal">
+        <h1 class="flex-1">[[name]]</h1>
+        <span class="flex-1">
+          <span>[[fixedAverage]]</span> (&plusmn; <span>[[fixedStandardDeviation]]</span>) ms
+        </span>
+      </header>
+      <paper-shadow class="fit" z="[[shadowZ]]" animated></paper-shadow>
+      <div id="chart-container" class="flex-3"></div>
+    </section>
+  </template>
+</dom-module>
+<script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'performance-test',
+
+      properties: {
+        name: {
+          type: String
+        },
+
+        maxLength: {
+          type: Number
+        },
+
+        data: {
+          type: Array,
+          value: function() {
+            return [];
+          }
+        },
+
+        started: {
+          type: Boolean,
+          reflect: true,
+          value: false
+        },
+
+        complete: {
+          type: Boolean,
+          reflect: true,
+          computed: 'computeComplete(data, maxLength)'
+        },
+
+        average: {
+          type: Number,
+          computed: 'computeAverage(data)'
+        },
+
+        series: {
+          type: Array,
+          computed: 'computeSeries(data)'
+        },
+
+        variance: {
+          type: Number,
+          computed: 'computeVariance(series, average)'
+        },
+
+        standardDeviation: {
+          type: Number,
+          computed: 'computeStandardDeviation(variance)'
+        },
+
+        shadowZ: {
+          computed: 'computeShadowZ(complete)'
+        },
+
+        fixedAverage: {
+          computed: 'computeFixedAverage(average)'
+        },
+
+        fixedStandardDeviation: {
+          computed: 'computeFixedStandardDeviation(standardDeviation)'
+        },
+
+        chart: {
+          value: function() {
+            return new Sparkline(this);
+          }
+        }
+      },
+
+      observers: {
+        // Why this no work?
+        'data.*': 'dataChanged'
+      },
+
+      ready: function() {
+        Polymer.dom(this.$['chart-container'])
+          .appendChild(this.chart.element);
+      },
+
+      attached: function() {
+        this.async(function() {
+          this.started = true;
+        }, 1);
+      },
+
+      forceDataChange: function() {
+        var data = this.data;
+        this.data = [];
+        this.data = data;
+      },
+
+      dataChanged: function() {
+        this.chart && this.chart.update();
+      },
+
+      computeStarted: function(data) {
+        return data.length > 0;
+      },
+
+      computeComplete: function(data, maxLength) {
+        return data.length === maxLength;
+      },
+
+      computeAverage: function(data) {
+        return data.length && data.reduce(function (sum, datum) {
+          return sum + datum.elapsed;
+        }, 0) / data.length;
+      },
+
+      computeFixedAverage: function(average) {
+        return average.toFixed(2);
+      },
+
+      computeSeries: function(data) {
+        return data.map(function (result) {
+          return result.elapsed;
+        });
+      },
+
+      computeVariance: function(series, average) {
+        return series.length && series.reduce(function (variance, value) {
+          return variance + Math.pow(value - average, 2);
+        }, 0) / series.length;
+      },
+
+      computeStandardDeviation: function(variance) {
+        return Math.sqrt(variance);
+      },
+
+      computeFixedStandardDeviation: function(standardDeviation) {
+        return standardDeviation.toFixed(2);
+      },
+
+      computeShadowZ: function(complete) {
+        return complete ? 0 : 1;
+      }
+    });
+  })();
+</script>
