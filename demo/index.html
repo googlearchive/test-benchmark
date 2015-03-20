@@ -1,18 +1,22 @@
 <!doctype html>
 <html>
   <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
     <title>Performance Benchmark Demo</title>
     <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
     <link rel="import" href="../performance-benchmark.html">
   </head>
   <body>
 
-    <performance-benchmark runs-per-test="100" auto-start>
+    <performance-benchmark runs-per-test="10" auto-start>
 
-      <template data-name="Computing the answer to life, the universe and everything.">
+      <template data-name="Compute Fibonacci sequence to n = 99999"
+                data-tags="alpha beta">
         <script>
           StartTest();
-          var a = 0, b = 1, n = 9999999, t;
+          var a = 0, b = 1, n = 99999, t;
           while (n-- > 0) {
             t = a;
             a = b;
@@ -22,7 +26,8 @@
         </script>
       </template>
 
-      <template data-name="Native button disabled behavior.">
+      <template data-name="Native button disabled behavior"
+                data-tags="alpha gamma">
         <button id="NativeButton">Native Button</button>
         <script>
           StartTest();
@@ -32,12 +37,42 @@
         </script>
       </template>
 
-      <template data-name="Control test that ends immediately.">
+      <template data-name="Measure document.body.offsetWidth"
+                data-tags="gamma beta">
+        <script>
+          StartTest();
+          document.body.offsetWidth;
+          EndTest();
+        </script>
+      </template>
+
+      <template data-name="Count to MAX_SAFE_INTEGER by 99999999999"
+                data-tags="alpha">
+        <script>
+          StartTest();
+          var i = 0, j = 99999999999;
+
+          while (i < Number.MAX_SAFE_INTEGER) i += j;
+          EndTest();
+        </script>
+      </template>
+
+      <template data-name="Control test that ends immediately"
+                data-tags="beta gamma">
         <script>
           StartTest();
           EndTest();
         </script>
       </template>
+
+      <template data-name="Control test that ends immediately 2"
+                data-tags="delta">
+        <script>
+          StartTest();
+          EndTest();
+        </script>
+      </template>
+
 
     </performance-benchmark>
 

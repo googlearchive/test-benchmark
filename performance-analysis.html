@@ -1,0 +1,241 @@
+<script src="../d3/d3.js"></script>
+
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-card/paper-card.html">
+<link rel="import" href="../font-roboto/roboto.html">
+<link rel="import" href="../layout/layout.html">
+
+<link rel="stylesheet" href="./charts/comparison.css">
+<script src="./charts/color.js"></script>
+<script src="./charts/comparison.js"></script>
+<dom-module id="performance-analysis">
+  <style>
+    :host {
+      display: block;
+      position: relative;
+      width: 100%;
+      height: 22em;
+    }
+
+    paper-card {
+      width: 100%;
+      height: 100%;
+      border-radius: 3px;
+    }
+
+    @media (max-width: 500px) {
+      :host {
+        font-size: 12px;
+      }
+    }
+  </style>
+  <template>
+    <paper-card id="chart-container" elevation="[[computeElevation(transitionComplete)]]" animated></paper-card>
+  </template>
+</dom-module>
+<script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'performance-analysis',
+
+      properties: {
+        data: {
+          type: Array,
+          value: function() {
+            return [];
+          }
+        },
+
+        visible: {
+          type: Boolean,
+          reflectToAttribute: true,
+          value: false
+        },
+
+        transitionComplete: {
+          type: Boolean,
+          reflectToAttribute: true,
+          readOnly: true,
+          notify: true,
+          value: function() {
+            this._setTransitionComplete(false);
+          }
+        },
+
+        chart: {
+          value: function() {
+            return new ComparisonChart(this);
+          }
+        },
+
+        sortedData: {
+          type: Array,
+          computed: 'computeSortedData(data)',
+          value: null
+        },
+
+        groupedData: {
+          type: Array,
+          computed: 'computeGroupedData(sortedData)',
+          value: null
+        },
+
+        baselineConfiguration: {
+          type: String,
+          value: null
+        }
+      },
+
+      observers: {
+        'data visible chart': 'updateChart'
+      },
+
+      listeners: {
+        'transitionend': 'onTransitionend'
+      },
+
+      ready: function() {
+        Polymer.dom(this.$['chart-container'])
+          .appendChild(this.chart.element);
+      },
+
+      attached: function() {
+        this.async(function() {
+          this.visible = true;
+        }, 1);
+      },
+
+      onTransitionend: function() {
+        this._setTransitionComplete(true);
+      },
+
+      computeElevation: function(transitionComplete) {
+        return transitionComplete ? 0 : 1;
+      },
+
+      get medianDatum () {
+        var sortedData = this.sortedData || [];
+        return sortedData[Math.floor(this.data.length / 2)];
+      },
+
+      get baselineDatum () {
+        return this.data.filter(function(datum) {
+          return datum.tags.indexOf('baseline') > -1;
+        }).shift();
+      },
+
+      get median () {
+        return this.medianDatum.average;
+      },
+
+      get baseline () {
+        var baselineDatum = this.baselineDatum;
+
+        if (this.baselineConfiguration === 'median') {
+          return this.median;
+        } else if (
+          this.baselineConfiguration !== 'mean' &&
+          baselineDatum
+        ) {
+          return baselineDatum.average;
+        }
+
+        return this.average;
+      },
+
+      get relativeSeries () {
+        var baseline = this.baseline;
+
+        return this.series.map(function(value) {
+          return value - baseline;
+        });
+      },
+
+      get series () {
+        return this.data.map(function(datum) {
+          return datum.average;
+        });
+      },
+
+      get average () {
+        return this.series.reduce(function(sum, value) {
+          return sum + value;
+        }, 0) / this.series.length;
+      },
+
+      get maximumAbsoluteDeviation () {
+        var baseline = this.baseline;
+        var maximumAbsoluteDeviation = 0;
+
+        return this.series.reduce(function(maximumAbsoluteDeviation, value) {
+          var absoluteDeviation = Math.abs(value - baseline);
+
+          return Math.max(
+            maximumAbsoluteDeviation,
+            absoluteDeviation
+          );
+        }, 0);
+      },
+
+      computeSortedData: function (data) {
+        return (data || []).sort(function(datumA, datumB) {
+          if (datumA.average > datumB.average) {
+            return 1;
+          } else if (datumA.average < datumB.average)  {
+            return -1;
+          }
+
+          return 0;
+        });
+      },
+
+      computeGroupedData: function (sortedData) {
+        var baselineDatum = this.baselineDatum;
+        var medianDatum = this.medianDatum;
+        var groupedMap = {};
+        var groupedSet = [];
+
+        sortedData = sortedData || [];
+        sortedData.forEach(function (datum) {
+          if (this.baselineConfiguration === 'median') {
+            if (datum === medianDatum) {
+              return;
+            }
+          } else if (this.baselineConfiguration !== 'mean') {
+            if (datum === baselineDatum) {
+              return;
+            }
+          }
+
+          datum.tags.forEach(function(tag) {
+            var group = groupedMap[tag];
+
+            if (tag === 'baseline') {
+              return;
+            }
+
+            if (!group) {
+              group = [];
+              groupedMap[tag] = group;
+              groupedSet.push(group);
+            }
+
+            group.push(datum);
+          });
+        }, this);
+
+        if (groupedSet.length) {
+          return groupedSet;
+        }
+
+        return [sortedData];
+      },
+
+      updateChart: function(data, visible, chart) {
+        chart && chart.update();
+      }
+    });
+  })();
+</script>

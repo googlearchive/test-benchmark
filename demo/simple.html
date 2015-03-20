@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
+    <title>Performance Benchmark Demo</title>
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <link rel="import" href="../performance-benchmark.html">
+  </head>
+  <body>
+
+    <performance-benchmark runs-per-test="10" auto-start baseline="median">
+
+      <template data-name="Native button disabled behavior."
+                data-tags="foo bar baz qux vim gz">
+        <button id="NativeButton">Native Button</button>
+        <script>
+          StartTest();
+          NativeButton.disabled = true;
+          NativeButton.removeAttribute('disabled');
+          EndTest();
+        </script>
+      </template>
+
+      <template data-name="Measure document.body.offsetWidth."
+                data-tags="foo baz vim zot baz gz">
+        <script>
+          StartTest();
+          document.body.offsetWidth;
+          EndTest();
+        </script>
+      </template>
+
+    </performance-benchmark>
+
+  </body>
+</html>
