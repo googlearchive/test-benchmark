@@ -1,7 +1,7 @@
 <script src="../d3/d3.js"></script>
 
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="../paper-shadow/paper-shadow.html">
+<link rel="import" href="../paper-card/paper-card.html">
 <link rel="import" href="../font-roboto/roboto.html">
 <link rel="import" href="../layout/layout.html">
 
@@ -18,6 +18,7 @@
 
     :host h1 {
       font-family: RobotoDraft;
+      font-weight: normal;
     }
 
     :host #chart-container {
@@ -26,47 +27,50 @@
       height: 50px;
     }
 
-    :host .card {
+    :host paper-card {
       position: relative;
       font-family: RobotoDraft, sans-serif;
       transition: opacity 0.5s cubic-bezier(.44,.13,.18,.99);
+      border-radius: 3px;
     }
 
-    :host([complete]) .card {
+    :host([complete]) paper-card {
       opacity: 0.65;
     }
 
-    :host .card paper-shadow {
+    :host paper-card paper-shadow {
       border-radius: 2px;
     }
 
-    :host .card > header {
+    :host paper-card > header {
       margin: 0;
       padding: 10px;
       color: #333;
     }
 
-    :host .card > header h1,
-    :host .card > header span {
+    :host paper-card > header h1,
+    :host paper-card > header span {
       margin: 0;
       font-size: 1em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    :host .card > header span {
+    :host paper-card > header span {
       text-align: right;
     }
   </style>
   <template>
-    <section class="card">
+    <paper-card elevation="[[shadowZ]]" animated>
       <header class="flex layout horizontal">
         <h1 class="flex-1">[[name]]</h1>
         <span class="flex-1">
           <span>[[fixedAverage]]</span> (&plusmn; <span>[[fixedStandardDeviation]]</span>) ms
         </span>
       </header>
-      <paper-shadow class="fit" z="[[shadowZ]]" animated></paper-shadow>
       <div id="chart-container" class="flex-3"></div>
-    </section>
+    </paper-card>
   </template>
 </dom-module>
 <script>
@@ -79,6 +83,13 @@
       properties: {
         name: {
           type: String
+        },
+
+        tags: {
+          type: Array,
+          value: function() {
+            return [];
+          }
         },
 
         maxLength: {
@@ -94,13 +105,13 @@
 
         started: {
           type: Boolean,
-          reflect: true,
+          reflectToAttribute: true,
           value: false
         },
 
         complete: {
           type: Boolean,
-          reflect: true,
+          reflectToAttribute: true,
           computed: 'computeComplete(data, maxLength)'
         },
 
@@ -111,7 +122,8 @@
 
         series: {
           type: Array,
-          computed: 'computeSeries(data)'
+          computed: 'computeSeries(data)',
+          observer: 'dataChanged'
         },
 
         variance: {
@@ -209,6 +221,15 @@
 
       computeShadowZ: function(complete) {
         return complete ? 0 : 1;
+      },
+
+      get results () {
+        return {
+          name: this.name,
+          tags: this.tags,
+          average: this.average,
+          standardDeviation: this.standardDeviation
+        };
       }
     });
   })();

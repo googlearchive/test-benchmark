@@ -1,8 +1,9 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="./performance-test.html">
+<link rel="import" href="./performance-analysis.html">
 <dom-module id="performance-benchmark">
   <style>
-    :host #frame {
+    #frame {
       display: block;
       position: absolute;
       visibility: hidden;
@@ -10,12 +11,26 @@
       left: -9999px
     }
 
-    :host #tests {
+    #tests,
+    #analysis {
       display: block;
       position: relative;
     }
 
-    :host performance-test {
+    performance-analysis {
+      margin-top: -23em;
+      margin-bottom: 1em;
+      opacity: 0;
+      transition: margin-top 1s cubic-bezier(.44,.13,.18,.99),
+                  opacity 1s cubic-bezier(.44,.13,.18,.99);
+    }
+
+    performance-analysis[visible] {
+      margin-top: 0;
+      opacity: 1;
+    }
+
+    performance-test {
       margin-top: -103px;
       margin-bottom: 14px;
       opacity: 0;
@@ -24,7 +39,7 @@
                   opacity 0.5s cubic-bezier(.44,.13,.18,.99);
     }
 
-    :host performance-test[started] {
+    performance-test[started] {
       margin-top: 0;
       opacity: 1;
     }
@@ -32,6 +47,7 @@
   <template>
     <iframe id="frame"></iframe>
     <content></content>
+    <section id="analysis"></section>
     <section id="tests"></section>
   </template>
 </dom-module>
@@ -101,6 +117,11 @@
         autoStart: {
           type: Boolean,
           value: false
+        },
+
+        baseline: {
+          type: String,
+          value: null
         }
       },
 
@@ -145,6 +166,10 @@
         test.name = template.dataset.name;
         test.maxLength = this.runsPerTest;
 
+        if (template.dataset.tags) {
+          test.tags = template.dataset.tags.split(' ');
+        }
+
         return test;
       },
 
@@ -178,7 +203,9 @@
           }.bind(this));
         }, this);
 
-        return testQueue;
+        return testQueue.then(function() {
+          return this.showAnalysis();
+        }.bind(this));
       },
 
       runTestsFor: function(template, test) {
@@ -205,6 +232,20 @@
         }
 
         return runQueue;
+      },
+
+      showAnalysis: function() {
+        var analysis = document.createElement('performance-analysis');
+        Polymer.dom(this.$.analysis).appendChild(analysis);
+        console.log(this.baseline);
+        analysis.baselineConfiguration = this.baseline;
+        analysis.data = this.results;
+      },
+
+      get results() {
+        return Polymer.dom(this.root).querySelectorAll('performance-test').map(function(performanceTest) {
+          return performanceTest.results;
+        });
       }
     });
   })();

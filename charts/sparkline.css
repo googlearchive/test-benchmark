@@ -1,6 +1,6 @@
 .line-path,
 html /deep/ .line-path {
   stroke: #888;
-  stroke-width: 2px;
+  stroke-width: 1px;
   fill: none;
 }
