@@ -1,15 +1,15 @@
 {
   "name": "performance-benchmark",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "authors": [
-    "Chris Joel <cdata@google.com>",
-    "Polymer Authors"
+    "The Polymer Authors"
   ],
   "dependencies": {
-    "font-roboto": "polymer/font-roboto#~0.5.5",
-    "paper-shadow": "polymer/paper-shadow#0.8-preview",
+    "polymer": "polymer/polymer#^1.0.0",
+    "paper-styles": "polymerelements/paper-styles#^1.0.0",
+    "paper-material": "polymerelements/paper-material#^1.0.0",
     "d3": "~3.5.5",
-    "polymer": "polymer/polymer#0.8-preview",
-    "webcomponentsjs": "webcomponents/webcomponentsjs#~0.5.5"
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0",
+    "iron-flex-layout": "polymerelements/iron-flex-layout#^1.0.0"
   }
 }

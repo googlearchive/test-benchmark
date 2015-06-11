@@ -1,9 +1,9 @@
 <script src="../d3/d3.js"></script>
 
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="../paper-card/paper-card.html">
-<link rel="import" href="../font-roboto/roboto.html">
-<link rel="import" href="../layout/layout.html">
+<link rel="import" href="../paper-material/paper-material.html">
+<link rel="import" href="../paper-styles/classes/typography.html">
+<link rel="import" href="../iron-flex-layout/classes/iron-flex-layout.html">
 
 <link rel="stylesheet" href="./charts/comparison.css">
 <script src="./charts/color.js"></script>
@@ -17,7 +17,7 @@
       height: 22em;
     }
 
-    paper-card {
+    paper-material {
       width: 100%;
       height: 100%;
       border-radius: 3px;
@@ -30,7 +30,7 @@
     }
   </style>
   <template>
-    <paper-card id="chart-container" elevation="[[computeElevation(transitionComplete)]]" animated></paper-card>
+    <paper-material id="chart-container" elevation="[[computeElevation(transitionComplete)]]" animated></paper-material>
   </template>
 </dom-module>
 <script>
@@ -88,9 +88,9 @@
         }
       },
 
-      observers: {
-        'data visible chart': 'updateChart'
-      },
+      observers: [
+        'updateChart(data, visible, chart)'
+      ],
 
       listeners: {
         'transitionend': 'onTransitionend'
