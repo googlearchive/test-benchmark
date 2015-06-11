@@ -1,9 +1,9 @@
 <script src="../d3/d3.js"></script>
 
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="../paper-card/paper-card.html">
-<link rel="import" href="../font-roboto/roboto.html">
-<link rel="import" href="../layout/layout.html">
+<link rel="import" href="../paper-material/paper-material.html">
+<link rel="import" href="../paper-styles/classes/typography.html">
+<link rel="import" href="../iron-flex-layout/classes/iron-flex-layout.html">
 
 <link rel="stylesheet" href="./charts/sparkline.css">
 <script src="./charts/sparkline.js"></script>
@@ -17,7 +17,7 @@
     }
 
     :host h1 {
-      font-family: RobotoDraft;
+      font-family: Roboto;
       font-weight: normal;
     }
 
@@ -27,29 +27,29 @@
       height: 50px;
     }
 
-    :host paper-card {
+    :host paper-material {
       position: relative;
-      font-family: RobotoDraft, sans-serif;
+      font-family: Roboto, sans-serif;
       transition: opacity 0.5s cubic-bezier(.44,.13,.18,.99);
       border-radius: 3px;
     }
 
-    :host([complete]) paper-card {
+    :host([complete]) paper-material {
       opacity: 0.65;
     }
 
-    :host paper-card paper-shadow {
+    :host paper-material paper-shadow {
       border-radius: 2px;
     }
 
-    :host paper-card > header {
+    :host paper-material > header {
       margin: 0;
       padding: 10px;
       color: #333;
     }
 
-    :host paper-card > header h1,
-    :host paper-card > header span {
+    :host paper-material > header h1,
+    :host paper-material > header span {
       margin: 0;
       font-size: 1em;
       overflow: hidden;
@@ -57,12 +57,12 @@
       white-space: nowrap;
     }
 
-    :host paper-card > header span {
+    :host paper-material > header span {
       text-align: right;
     }
   </style>
   <template>
-    <paper-card elevation="[[shadowZ]]" animated>
+    <paper-material elevation="[[shadowZ]]" animated>
       <header class="flex layout horizontal">
         <h1 class="flex-1">[[name]]</h1>
         <span class="flex-1">
@@ -70,7 +70,7 @@
         </span>
       </header>
       <div id="chart-container" class="flex-3"></div>
-    </paper-card>
+    </paper-material>
   </template>
 </dom-module>
 <script>
@@ -112,17 +112,17 @@
         complete: {
           type: Boolean,
           reflectToAttribute: true,
-          computed: 'computeComplete(data, maxLength)'
+          computed: 'computeComplete(data.length, maxLength)'
         },
 
         average: {
           type: Number,
-          computed: 'computeAverage(data)'
+          computed: 'computeAverage(data.length)'
         },
 
         series: {
           type: Array,
-          computed: 'computeSeries(data)',
+          computed: 'computeSeries(data.length)',
           observer: 'dataChanged'
         },
 
@@ -155,10 +155,9 @@
         }
       },
 
-      observers: {
-        // Why this no work?
-        'data.*': 'dataChanged'
-      },
+      observers: [
+        'dataChanged(data.length)'
+      ],
 
       ready: function() {
         Polymer.dom(this.$['chart-container'])
@@ -181,26 +180,26 @@
         this.chart && this.chart.update();
       },
 
-      computeStarted: function(data) {
-        return data.length > 0;
+      computeStarted: function(dataChange) {
+        return this.data.length > 0;
       },
 
-      computeComplete: function(data, maxLength) {
-        return data.length === maxLength;
+      computeComplete: function(dataChange, maxLength) {
+        return this.data.length === maxLength;
       },
 
-      computeAverage: function(data) {
-        return data.length && data.reduce(function (sum, datum) {
+      computeAverage: function(dataChange) {
+        return this.data.length && this.data.reduce(function (sum, datum) {
           return sum + datum.elapsed;
-        }, 0) / data.length;
+        }, 0) / this.data.length;
       },
 
       computeFixedAverage: function(average) {
         return average.toFixed(2);
       },
 
-      computeSeries: function(data) {
-        return data.map(function (result) {
+      computeSeries: function(dataChange) {
+        return this.data.map(function (result) {
           return result.elapsed;
         });
       },
