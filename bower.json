@@ -11,5 +11,6 @@
     "d3": "~3.5.5",
     "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0",
     "iron-flex-layout": "polymerelements/iron-flex-layout#^1.0.0"
-  }
+  },
+  "ignore": []
 }
