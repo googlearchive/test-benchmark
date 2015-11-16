@@ -1,16 +1,39 @@
 {
-  "name": "performance-benchmark",
+  "name": "test-benchmark",
   "version": "1.0.0",
+  "description": "An element that helps compare the performance of various custom element scenarios.",
   "authors": [
     "The Polymer Authors"
   ],
+  "keywords": [
+    "web-components",
+    "web-component",
+    "polymer",
+    "testing",
+    "performance"
+  ],
+  "main": "test-benchmark.html",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/PolymerElements/test-benchmark"
+  },
+  "license": "http://polymer.github.io/LICENSE.txt",
+  "homepage": "https://github.com/PolymerElements/test-benchmark",
   "dependencies": {
-    "polymer": "polymer/polymer#^1.0.0",
+    "polymer": "polymer/polymer#^1.2.0",
+    "iron-resizable-behavior": "polymerelements/iron-resizable-behavior#^1.0.0",
+    "iron-flex-layout": "polymerelements/iron-flex-layout#^1.0.0",
     "paper-styles": "polymerelements/paper-styles#^1.0.0",
-    "paper-material": "polymerelements/paper-material#^1.0.0",
-    "d3": "~3.5.5",
     "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0",
-    "iron-flex-layout": "polymerelements/iron-flex-layout#^1.0.0"
+    "promise-polyfill": "polymerlabs/promise-polyfill#^1.0.0",
+    "d3": "~3.5.5"
+  },
+  "devDependencies": {
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0",
+    "web-component-tester": "polymer/web-component-tester#^3.4.0",
+    "iron-component-page": "polymerelements/iron-component-page#^1.0.0",
+    "iron-test-helpers": "polymerelements/iron-test-helpers#^1.0.0"
   },
   "ignore": []
 }

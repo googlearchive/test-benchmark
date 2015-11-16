@@ -1,0 +1,111 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<script>
+(function() {
+  'use strict';
+
+  /**
+   * The SetupFrame function represents the harness that is provided in every
+   * benchmark test. The harness is created by stringifying the SetupFrame
+   * function and converting it to an IIFE within the `<head>` of the final
+   * test run document.
+   */
+  function SetupFrame() {
+    'use strict';
+
+    /**
+     * Test
+     *
+     * A test instance tracks the internal state of the current test run and
+     * handles reporting the result to a listening frame (if any).
+     */
+    function Test () {
+      this.startTime = -1;
+      this.stopTime = -1;
+    }
+
+    /**
+     * This static method is equivalent to `performance.now` where available,
+     * otherwise it is equivalent to `Date.now`.
+     */
+    Test.now = (function () {
+      if (window.performance && window.performance.now) {
+        return window.performance.now.bind(window.performance);
+      }
+
+      return Date.now.bind(Date);
+    })();
+
+    Test.prototype = {
+      /**
+       * Marks the start time of the test.
+       */
+      start: function () {
+        this.startTime = Test.now();
+      },
+
+      /**
+       * Marks the end time of the test.
+       */
+      stop: function () {
+        this.stopTime = Test.now();
+      },
+
+      /**
+       * Reports the difference between the marked start time and end time of
+       * the test via `postMessage` to `window.parent`.
+       */
+      report: function () {
+        window.parent.postMessage({
+					type: 'test-run-result',
+          elapsed: this.stopTime - this.startTime
+        }, '*');
+      }
+    };
+
+    /**
+     * Initializes a global instance of a Test and "starts" it.
+     */
+    window.StartTest = function () {
+      window.__simple_benchmark_test__ = new Test();
+      window.__simple_benchmark_test__.start();
+    };
+
+    /**
+     * Stops the global Test instance a "reports" the results.
+     */
+    window.EndTest = function () {
+      window.__simple_benchmark_test__.stop();
+      window.__simple_benchmark_test__.report();
+    };
+  }
+
+  /**
+   * The boilerplate markup that is prepended to every provided test HTML
+   * markup in order to generate the document that is used for a test run.
+   */
+  SetupFrame.PREAMBLE = [
+    '<head>',
+    '<base href="' + new URL('./', document.baseURI).href + '">',
+    '<script src="../../webcomponentsjs/webcomponents-lite.js"><\/script>',
+    '<script>(' + SetupFrame.toString() + ')();<\/script>',
+    '<\/head>',
+    '<body>',
+  ].join('');
+
+  /**
+   * Same as `SetupFrame.PREAMBLE`, but for appending.
+   */
+  SetupFrame.POSTAMBLE = '<\/body>';
+
+  Polymer.SetupFrame = SetupFrame;
+})();
+</script>

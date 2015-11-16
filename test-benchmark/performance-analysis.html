@@ -1,0 +1,100 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<script>
+(function() {
+  'use strict';
+
+  /**
+   * PerformanceAnalysis
+   *
+   * This class performs comparative analysis of a list of `PerformanceTest`
+   * instances. It provides a list of objects which describe the relative
+   * differences between the provided list of tests, including percentage
+   * differences of averages and relative ranking by average.
+   *
+   * @param {Array} tests A list of `PerformanceTest` instances.
+   */
+  function PerformanceAnalysis(tests) {
+    this.tests = tests;
+  }
+
+  PerformanceAnalysis.prototype = {
+
+    /**
+     * A list of results, in the same order as the provided set of tests.
+     *
+     * @type {Array}
+     */
+    get results() {
+      var sortedResults = this.sortedResults;
+
+      return this.tests.map(function(test) {
+        for (var i = 0; i < sortedResults.length; ++i) {
+          if (sortedResults[i].test === test) {
+            return sortedResults.splice(i, 1).pop();
+          }
+        }
+      }, this);
+    },
+
+    /**
+     * A list of results, sorted from fastest to slowest.
+     *
+     * @type {Array}
+     */
+    get sortedResults() {
+      return this.sortedTests.map(function(test, index, tests) {
+        return {
+          test: test,
+          comparedToNext: test.averageRelativeTo(tests[index + 1]),
+          comparedToPrevious: test.averageRelativeTo(tests[index - 1]),
+          comparedToFastest: test.averageRelativeTo(tests[0]),
+          comparedToSlowest: test.averageRelativeTo(tests[tests.length - 1]),
+          isFastest: index === 0,
+          isSlowest: index === (tests.length - 1)
+        };
+      });
+    },
+
+    /**
+     * The provided list of `PerformanceTest` instances, sorted from fastest
+     * average to slowest average.
+     *
+     * @type {Array}
+     */
+    get sortedTests() {
+      return this.tests.slice().sort(function(a, b) {
+        return a.compareTo(b);
+      });
+    },
+
+    /**
+     * The fastest of the provided tests, by average.
+     *
+     * @type {PerformanceAverage}
+     */
+    get fastestTest() {
+      return this.sortedTests[0];
+    },
+
+    /**
+     * The slowest of the provided tests, by average.
+     *
+     * @type {PerformanceAverage}
+     */
+    get slowestTest() {
+      return this.sortedTests[this.tests.length - 1];
+    }
+  };
+
+  Polymer.PerformanceAnalysis = PerformanceAnalysis;
+})();
+</script>

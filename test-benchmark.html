@@ -1,0 +1,431 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../promise-polyfill/promise-polyfill.html">
+<link rel="import" href="test-benchmark/feature-detect.html">
+<link rel="import" href="test-benchmark-visualizer.html">
+<link rel="import" href="test-benchmark/performance-test.html">
+<link rel="import" href="test-benchmark/performance-analysis.html">
+
+<!--
+The `test-benchmark` element is designed to facilitate quick, meaningful
+and consistent Web Component-centric performance testing within the browser.
+Tests can be written and configured declaratively or imperatively, and after the
+testing is complete the element provides a meaningful, baseline analysis of the
+data.
+
+## Usage
+
+There are a couple of ways to configure tests. All configured tests will
+automatically pull in the `webcomponents-lite.js` Web Components polyfill
+script by default.
+
+### Declarative configuration
+
+Tests can be configured declaratively as markup with `template` tags:
+
+```html
+<test-benchmark runs-per-test="100" random-order>
+  <template data-name="Test one">
+    <script>
+      StartTest();
+      // Do some work..
+      EndTest();
+    </script>
+  </template>
+
+  <template data-name="Test two">
+    <script>
+      StartTest();
+      // Do some work..
+      EndTest();
+    </script>
+  </template>
+</test-benchmark>
+```
+
+Every `template` tag within the `test-benchmark` element will be transformed
+into a test that will be considered within the broader benchmark.
+
+### Imperative configuration
+
+Tests can be configured imperatively by using the `addTest` method. A test's
+name, HTML content and optional list of tags should be provided. The HTML
+content provided should reflect the content that would have otherwise been
+found in a corresponding test temmplate:
+
+```js
+var benchmark = Polymer.dom(document).querySelector('test-benchmark');
+var html = '<script>\
+StartTest();\
+// Do some work...\
+EndTest();\
+<\/script>';
+
+benchmark.addTest('Test one', html);
+```
+
+## Anatomy of a test run
+
+In order to run a test and collect data, `test-benchmark` performs the following
+steps:
+
+ 1. Wrap the provided test HTML in a light weight test harness. This harness
+    brings in the Web Components polyfill and also craetes the global
+    `StartTest` and `EndTest` functions. test HTML is inserted into the
+    `<body>` tag of the test harness.
+ 2. Convert the wrapped test HTML into a [Blob][1], and then [create an object
+    URL][0] from that blob.
+ 3. Assign the object URL as the `src` attribute of an `<iframe>`.
+ 4. When `EndTest` is called, a [message is posted][2] from the child `<iframe>`
+    to the parent frame indicating that the test ended and providing the time
+    between `StartTest` and `EndTest` as measured by
+    [`window.performance.now()`][3].
+
+## Browser limitations
+
+### Inert templates
+
+It may be desirable to create test benchmarks in a document root using the
+declarative configuration style in browsers that do not support inert template
+tags. The Web Components polyfill will give you inert template tags in HTML
+imports, but *not* in the main document. To offer a partial work-around, one
+may mark script tags with `type="benchmark"` in order to prevent scripts from
+executing. This attribute will be removed from the script before the test is
+created.
+
+### Required features
+
+This element depends on the ability to use a [data URI][4] as the `src`
+attribute for an `<iframe>` element. This feature is supported by pretty much
+every browser. *However*, no known version of Microsoft's browsers - including
+Edge - support this feature as of this writing.
+
+`test-benchmark` performs a feature test for the ability to use [data URIs][4]
+as described above, and will not perform test runs in browsers that do not
+support the necessary feature.
+
+[0]: https://developer.mozilla.org/en-US/docs/Web/API/URL/createObjectURL
+[1]: https://developer.mozilla.org/en-US/docs/Web/API/Blob
+[2]: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
+[3]: https://developer.mozilla.org/en-US/docs/Web/API/Performance/now
+[4]: http://caniuse.com/#feat=datauri
+
+@demo demo/index.html
+-->
+
+<dom-module id="test-benchmark">
+  <template>
+    <style>
+      iframe {
+        position: absolute;
+        clip: rect(0, 0, 0, 0);
+      }
+    </style>
+    <test-benchmark-visualizer
+      id="visualizer"
+      tests="[[tests]]">
+      <content select=":not(template)"
+      hidden$="[[hideVisualizer]]"></content>
+    </test-benchmark-visualizer>
+    <iframe id="iframe"></iframe>
+    <content id="templates" select="template"></content>
+  </template>
+</dom-module>
+<script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'test-benchmark',
+
+      /**
+       * Fires when a single test run of a single test completes.
+       *
+       * @event test-run-complete
+       * @param {Object} detail
+       * @param {Object} detail.test The PerformanceTest instance that was created
+       * for the test that corresponds to the completed run.
+       */
+
+      /**
+       * Fires when all tests that can be run have been run.
+       *
+       * @event all-tests-complete
+       * @param {Object} detail A reference to the `test-benchmark` element.
+       */
+
+      properties: {
+
+        /**
+         * The number of test runs to perform for each of the configured tests
+         * before the benchmark is considered to have been completed. Given the
+         * potential for high variability within single test runs (e.g., for
+         * scenarios where garbage collection kicks off in the middle of a run)
+         * it is recommended that this be a high number (>= 50 should be
+         * adequate for most basic tests).
+         */
+        runsPerTest: {
+          type: Number,
+          value: 100
+        },
+
+        /**
+         * If true, each test run will be chosen randomly from the set of
+         * configured tests provided. If false, each configured test will
+         * perform all of its test runs before the next configured test begins.
+         */
+        randomOrder: {
+          type: Boolean,
+          value: false
+        },
+
+        /**
+         * A list of all configured tests provided to the element, represented
+         * here as `PerformanceTest` instances.
+         */
+        tests: {
+          type: Array,
+          readOnly: true,
+          value: function() {
+            return [];
+          }
+        },
+
+        /**
+         * True when all configured tests have performed `runsPerTest` test
+         * runs.
+         */
+        complete: {
+          type: Boolean,
+          readOnly: true,
+          notify: true,
+          value: false
+        },
+
+        /**
+         * True while configured tests are in the process of running. This
+         * property will be false before the benchmark has started, and after
+         * that benchmark is complete.
+         */
+        running: {
+          type: Boolean,
+          readOnly: true,
+          notify: true,
+          value: false
+        },
+
+        /**
+         * If true, the visualizer will not be rendered.
+         */
+        hideVisualizer: {
+          type: Boolean,
+          value: false
+        }
+      },
+
+      listeners: {
+        'test-run-complete': '_onTestRunComplete'
+      },
+
+      observers: [
+        '_updateRunsPerTest(runsPerTest, tests)'
+      ],
+
+      created: function() {
+        this._templateObserver = null;
+      },
+
+      attached: function() {
+        this._templateObserver = Polymer.dom(this.$.templates).observeNodes(function(changes) {
+          changes.addedNodes.forEach(this.addTestFromTemplate, this);
+        }.bind(this));
+      },
+
+      detached: function() {
+        Polymer.dom(this.$.templates).unobserveNodes(this._templateObserver);
+      },
+
+      /**
+       * An analysis of the tests in their current state.
+       *
+       * @type {PerformanceAnalysis}
+       */
+      get analysis() {
+        return new Polymer.PerformanceAnalysis(this.tests);
+      },
+
+      /**
+       * Begins test runs for all currently configured tests. If test runs are
+       * currently in progress, calling this method has no effect. If test runs
+       * have already completed, calling this method resets the `test-benchmark`
+       * and begins test runs again.
+       */
+      start: function() {
+        if (!Polymer.clientSupportsHtmlDataUri) {
+          console.warn('This browser does not support HTML data URIs as iframe src. Skipping tests.');
+          this.fire('all-tests-complete', this);
+          return;
+        }
+
+        if (this.complete) {
+          this.reset();
+        }
+
+        if (this.running) {
+          return;
+        }
+
+        this._setRunning(true);
+        this._runNextTest();
+      },
+
+      /**
+       * Resets test runs for all currently configured tests
+       */
+      reset: function() {
+        this._setRunning(false);
+        this._setComplete(false);
+        this._setTests(this.tests.map(function(test) {
+          return test.createBlankCopy();
+        }));
+      },
+
+      /**
+       * Add a test imperatively using a `template` element. The `template`
+       * element should have a `name` key in its `dataset` map (otherwise known
+       * as a `data-name` attribute). The `template` can have an optional
+       * `data-tags` attribute which is a space separated list of tags to
+       * associate with the test.
+       *
+       * @param {HTMLTemplateElement} template A template to create a test
+       * from.
+       */
+      addTestFromTemplate: function(template) {
+        this.addTest(
+          template.dataset.name,
+          template.innerHTML,
+          template.dataset.tags ? template.dataset.tags.split(' ') : []
+        );
+      },
+
+      /**
+       * Add a test imperatively by providing a name, some test markup and
+       * an optional set of tags to associate with the test.
+       *
+       * @param {string} name The name of the test.
+       * @param {string} html The markup for the test.
+       * @param {Array=} tags An optional list of tags to associate with the
+       * test.
+       */
+      addTest: function(name, html, tags) {
+        this.push('tests', new Polymer.PerformanceTest(
+          name,
+          html,
+          tags || [],
+          this.runsPerTest,
+          this.$.iframe
+        ));
+      },
+
+      /**
+       * @return {PerformanceTest} A random, not-completed test from the set of
+       * tests currently configured with the element.
+       */
+      _randomTest: function() {
+        do {
+          var test = this.tests[Math.floor(Math.random() * this.tests.length)];
+        } while (test && test.complete);
+
+        return test;
+      },
+
+      /**
+       * @return {PerformanceTest} The first non-completed test from the set of
+       * tests currently configured with the element by order of configuration.
+       */
+      _nextTestInLinearOrder: function() {
+        for (var i = 0; i < this.tests.length; ++i) {
+          if (!this.tests[i].complete) {
+            return this.tests[i];
+          }
+        }
+      },
+
+      /**
+       * @return {boolean} Returns true if all configured tests have completed.
+       */
+      _allTestsAreComplete: function() {
+        return !this._nextTestInLinearOrder();
+      },
+
+      /**
+       * Picks the next test in the configured order and runs it. This method
+       * will wait for the asynchronous completion of the test run and call
+       * itself if there are still tests to be run.
+       */
+      _runNextTest: function() {
+        var nextTest = this.randomOrder ?
+          this._randomTest() :
+          this._nextTestInLinearOrder();
+        var testRunCompletes;
+
+        if (!nextTest) {
+          testRunCompletes = Promise.resolve();
+        } else {
+          testRunCompletes = nextTest.run();
+        }
+
+        testRunCompletes.then(function() {
+          if (nextTest) {
+            this.fire('test-run-complete', { test: nextTest });
+          }
+
+          if (!this.running) {
+            return;
+          }
+
+          if (this._allTestsAreComplete()) {
+            this._setRunning(false);
+            this._setComplete(true);
+            this.fire('all-tests-complete', this);
+          } else {
+            this._runNextTest();
+          }
+        }.bind(this));
+      },
+
+      /**
+       * Updates the visualizer as each test run completes.
+       */
+      _onTestRunComplete: function(event) {
+        if (this.hideVisualizer) {
+          return;
+        }
+
+        this.$.visualizer.update(event.detail.test);
+      },
+
+      /**
+       * Update a list of tests with the latest `runsPerTest` value.
+       *
+       * @param {number} runsPerTest The intended number of runs per test.
+       * @param {Array} tests A list of tests to update.
+       */
+      _updateRunsPerTest: function(runsPerTest, tests) {
+        tests && tests.forEach(function(test) {
+          test.totalRuns = runsPerTest;
+        });
+      }
+    });
+  })();
+</script>
+

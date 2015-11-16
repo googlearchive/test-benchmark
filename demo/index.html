@@ -1,80 +1,77 @@
 <!doctype html>
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
 <html>
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
 
-    <title>Performance Benchmark Demo</title>
+    <title>Test Benchmark Demo</title>
     <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
-    <link rel="import" href="../performance-benchmark.html">
+    <link rel="import" href="../test-benchmark.html">
+    <link rel="import" href="../../paper-styles/demo-pages.html">
+    <style is="custom-style">
+      body {
+        height: 100vh;
+      }
+
+      h3 {
+        text-align: center;
+        color: var(--paper-blue-grey-500);
+      }
+    </style>
   </head>
   <body>
+    <h3>Tap anywhere to begin benchmarking</h3>
 
-    <performance-benchmark runs-per-test="10" auto-start>
-
-      <template data-name="Compute Fibonacci sequence to n = 99999"
-                data-tags="alpha beta">
-        <script>
-          StartTest();
-          var a = 0, b = 1, n = 99999, t;
-          while (n-- > 0) {
-            t = a;
-            a = b;
-            b += t;
-          }
-          EndTest();
+    <test-benchmark runs-per-test="100" random-order>
+      <template data-name="paper-button@v1.0.0">
+        <link rel="import" href="//polygit.org/paper-button+polymerelements+v1.0.0/components/paper-button/paper-button.html">
+        <script type="benchmark">
+          window.addEventListener('WebComponentsReady', function() {
+            StartTest();
+            document.body.appendChild(document.createElement('paper-button'));
+            EndTest();
+          });
         </script>
       </template>
 
-      <template data-name="Native button disabled behavior"
-                data-tags="alpha gamma">
-        <button id="NativeButton">Native Button</button>
-        <script>
-          StartTest();
-          NativeButton.disabled = true;
-          NativeButton.removeAttribute('disabled');
-          EndTest();
+      <template data-name="paper-button@master">
+        <link rel="import" href="//polygit.org/components/paper-button/paper-button.html">
+        <script type="benchmark">
+          window.addEventListener('WebComponentsReady', function() {
+            StartTest();
+            document.body.appendChild(document.createElement('paper-button'));
+            EndTest();
+          });
         </script>
       </template>
+    </test-benchmark>
 
-      <template data-name="Measure document.body.offsetWidth"
-                data-tags="gamma beta">
-        <script>
-          StartTest();
-          document.body.offsetWidth;
-          EndTest();
-        </script>
-      </template>
+    <script>
+      window.addEventListener('load', function() {
+        var benchmark = document.querySelector('test-benchmark');
 
-      <template data-name="Count to MAX_SAFE_INTEGER by 99999999999"
-                data-tags="alpha">
-        <script>
-          StartTest();
-          var i = 0, j = 99999999999;
+        benchmark.addEventListener('test-run-complete', function() {
+          console.count('A test run completed');
+        });
 
-          while (i < Number.MAX_SAFE_INTEGER) i += j;
-          EndTest();
-        </script>
-      </template>
+        benchmark.addEventListener('complete-changed', function() {
+          if (benchmark.complete)
+            console.log('All tests done!');
+        });
 
-      <template data-name="Control test that ends immediately"
-                data-tags="beta gamma">
-        <script>
-          StartTest();
-          EndTest();
-        </script>
-      </template>
-
-      <template data-name="Control test that ends immediately 2"
-                data-tags="delta">
-        <script>
-          StartTest();
-          EndTest();
-        </script>
-      </template>
-
-
-    </performance-benchmark>
-
+        document.body.addEventListener('click', function() {
+          benchmark.start();
+        });
+      });
+    </script>
   </body>
 </html>
