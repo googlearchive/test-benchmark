@@ -1,0 +1,137 @@
+<!doctype html>
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>test-benchmark tests</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+  <script src="../../web-component-tester/browser.js"></script>
+  <script src="helpers.js"></script>
+
+  <link rel="import" href="../test-benchmark.html">
+
+</head>
+<body>
+
+  <test-fixture id="TrivialBenchmark">
+    <template>
+      <test-benchmark></test-benchmark>
+    </template>
+  </test-fixture>
+
+  <test-fixture id="ExampleTestTemplate">
+    <template>
+      <template data-name="Template Test">
+        <!-- NOTE(cdata): type="benchmark" keeps the script from executing in
+             browsers that do not support inert scripts -->
+        <script type="benchmark">
+          StartTest();
+          EndTest();
+        </script>
+      </template>
+    </template>
+  </test-fixture>
+
+  <script>
+    suite('<test-benchmark>', function() {
+      var benchmark;
+      var templateTest;
+
+      function supportsHtmlDataUri() {
+        return !!Polymer.clientSupportsHtmlDataUri
+      }
+
+      setup(function() {
+        benchmark = fixture('TrivialBenchmark');
+        templateTest = fixture('ExampleTestTemplate');
+      });
+
+      test('allows tests to be added by name and markup', skipUnless(supportsHtmlDataUri, function() {
+        benchmark.addTest('foo', '<div>bar</div>');
+        expect(benchmark.tests.length).to.be.equal(1);
+        expect(benchmark.tests[0].name).to.be.equal('foo');
+        expect(benchmark.tests[0].html).to.be.equal('<div>bar</div>');
+      }));
+
+      test('allows tests to be added with a template element', skipUnless(supportsHtmlDataUri, function() {
+        benchmark.addTestFromTemplate(templateTest);
+        expect(benchmark.tests.length).to.be.equal(1);
+        expect(benchmark.tests[0].name).to.be.equal('Template Test');
+        expect(benchmark.tests[0].html).to.be.equal(templateTest.innerHTML);
+      }));
+
+      test('automatically adds light-child templates as tests', skipUnless(supportsHtmlDataUri, function(done) {
+        Polymer.dom(benchmark).appendChild(templateTest);
+
+        Polymer.Base.async(function() {
+          expect(benchmark.tests.length).to.be.equal(1);
+          expect(benchmark.tests[0].name).to.be.equal('Template Test');
+          expect(benchmark.tests[0].html).to.be.equal(templateTest.innerHTML);
+          done();
+        }, 1);
+      }));
+
+      suite('a running benchmark', function() {
+        setup(function() {
+          benchmark.addTestFromTemplate(templateTest);
+        });
+
+        test('is marked as running once started', skipUnless(supportsHtmlDataUri, function() {
+          benchmark.start();
+          expect(benchmark.running).to.be.equal(true);
+        }));
+
+        test('notifies when all tests have run', skipUnless(supportsHtmlDataUri, function(done) {
+          benchmark.start();
+          benchmark.addEventListener('all-tests-complete', function() {
+            expect(benchmark.tests[0].data.length).to.be.equal(benchmark.runsPerTest);
+            done();
+          });
+        }));
+
+        test('allows the number of runs to be configured', skipUnless(supportsHtmlDataUri, function(done) {
+          benchmark.runsPerTest = 5;
+          benchmark.start();
+          benchmark.addEventListener('all-tests-complete', function() {
+            expect(benchmark.tests[0].data.length).to.be.equal(5);
+            done();
+          });
+        }));
+
+        test('notifies when each test run completes', skipUnless(supportsHtmlDataUri, function(done) {
+          var testRunsCompleted = 0;
+          benchmark.runsPerTest = 5;
+          benchmark.start();
+          benchmark.addEventListener('test-run-complete', function() {
+            expect(benchmark.tests[0].data.length).to.be.equal(++testRunsCompleted);
+          });
+          benchmark.addEventListener('all-tests-complete', function() {
+            expect(testRunsCompleted).to.be.equal(5);
+            done();
+          });
+        }));
+
+        test('is marked as complete when all test runs are completed', skipUnless(supportsHtmlDataUri, function(done) {
+          benchmark.runsPerTest = 5;
+          benchmark.start();
+          benchmark.addEventListener('all-tests-complete', function() {
+            expect(benchmark.complete).to.be.equal(true);
+            done();
+          });
+        }));
+      });
+    });
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<script>
+/**
+ * This script performs feature detection to determine if the current browser
+ * supports data URIs as the `src` attribute for an `<iframe>` element.
+ *
+ * If this feature is supported the script will set
+ * `Polymer.clientSupportsHtmlDataUri` to true. Note that this test is subject
+ * to the asynchrony of loading a document in an `<iframe>` element.
+ */
+(function() {
+  'use strict';
+
+  // Create a data URI to test with.
+  var url = URL.createObjectURL(
+    new Blob(
+      // The created document will run some JS within the <iframe> if it loads
+      // successfully:
+      ['<script>window.parent.Polymer.clientSupportsHtmlDataUri = true;<\/script>'],
+      { type: 'text/html' }
+    )
+  );
+  // Create an iframe to test loading with.
+  var iframe = document.createElement('iframe');
+  document.body.appendChild(iframe);
+
+  // Assign the data URI as the iframe's src:
+  iframe.src = url;
+
+  iframe.onload = function() {
+    // If we get an `onload`, we can safely remove the <iframe>
+    Polymer.clientSupportsHtmlDataUri = Polymer.clientSupportsHtmlDataUri || false;
+    iframe.onload = null;
+    iframe.remove();
+  };
+})();
+</script>

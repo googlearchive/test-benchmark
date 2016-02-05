@@ -1,0 +1,136 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-styles/color.html">
+<link rel="import" href="test-benchmark-visualizer/test-benchmark-sparkline.html">
+
+<!--
+This element is meant to be a light-weight visualization that ships with the
+`test-benchmark` element. It displays a series of cards, each of which
+correspond to a configured test in the `test-benchmark`. The cards are
+implemented as the `test-benchmark-sparkline` element.
+
+@demo demo/index.html
+-->
+<dom-module id="test-benchmark-visualizer">
+  <template>
+    <style>
+      :host {
+        @apply(--layout);
+        @apply(--layout-flex);
+        @apply(--layout-flex-horizontal);
+        @apply(--layout-wrap);
+      }
+
+      test-benchmark-sparkline {
+        flex: 1 0 300px;
+        margin: 0.5em;
+      }
+
+      /* NOTE(cdata): I would use `nth-of-type` here, but it doesn't quite work
+         that way when using ShadyCSS. */
+      test-benchmark-sparkline[data-index="0"] {
+        --test-benchmark-sparkline-light: var(--paper-blue-500);
+        --test-benchmark-sparkline-dark: var(--paper-blue-700);
+        --test-benchmark-sparkline-axis-color: var(--paper-blue-500);
+        --test-benchmark-sparkline-column-color: var(--paper-blue-100);
+      }
+
+      test-benchmark-sparkline[data-index="1"] {
+        --test-benchmark-sparkline-light: var(--paper-green-500);
+        --test-benchmark-sparkline-dark: var(--paper-green-700);
+        --test-benchmark-sparkline-axis-color: var(--paper-green-500);
+        --test-benchmark-sparkline-column-color: var(--paper-green-100);
+      }
+
+      test-benchmark-sparkline[data-index="2"] {
+        --test-benchmark-sparkline-light: var(--paper-purple-500);
+        --test-benchmark-sparkline-dark: var(--paper-purple-700);
+        --test-benchmark-sparkline-axis-color: var(--paper-purple-500);
+        --test-benchmark-sparkline-column-color: var(--paper-purple-100);
+      }
+
+      test-benchmark-sparkline[data-index="3"] {
+        --test-benchmark-sparkline-light: var(--paper-red-500);
+        --test-benchmark-sparkline-dark: var(--paper-red-700);
+        --test-benchmark-sparkline-axis-color: var(--paper-red-500);
+        --test-benchmark-sparkline-column-color: var(--paper-red-100);
+      }
+
+      test-benchmark-sparkline[data-index="4"] {
+        --test-benchmark-sparkline-light: var(--paper-orange-500);
+        --test-benchmark-sparkline-dark: var(--paper-orange-700);
+        --test-benchmark-sparkline-axis-color: var(--paper-orange-500);
+        --test-benchmark-sparkline-column-color: var(--paper-orange-100);
+      }
+    </style>
+    <template is="dom-repeat" items="[[tests]]" as="test">
+      <test-benchmark-sparkline test="[[test]]" data-index$="[[__mod(index, 5)]]"></test-benchmark-sparkline>
+    </template>
+    <content select=":not(template)"></content>
+  </template>
+</dom-module>
+<script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'test-benchmark-visualizer',
+
+      properties: {
+
+        /**
+         * A reference to the list of `PerformanceTest` instances to visualize.
+         */
+        tests: {
+          type: Array
+        }
+      },
+
+      observers: [
+        '_testsChanged(tests.*)'
+      ],
+
+      /**
+       * Updates the visualization for a given test.
+       *
+       * @param {PerformanceTest} test A reference to the `PerformanceTest`
+       * instance that corresponds to the test card that should be updated.
+       */
+      update: function(test) {
+        var sparklines = Polymer.dom(this.root).querySelectorAll('test-benchmark-sparkline');
+
+        for (var i = 0; i < sparklines.length; ++i) {
+          if (sparklines[i].test === test) {
+            sparklines[i].update();
+            break;
+          }
+        }
+      },
+
+      /**
+       * Invalidates ShadyCSS custom properties as new tests are added.
+       */
+      _testsChanged: function() {
+        this.updateStyles();
+      },
+
+      /**
+       * Helper to enable modulo operations in a `dom-repeat`.
+       * @private
+       */
+      __mod: function(left, right) {
+        return left % right;
+      }
+    });
+  })();
+</script>

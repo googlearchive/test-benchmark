@@ -1,0 +1,224 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../../promise-polyfill/promise-polyfill.html">
+<link rel="import" href="setup-frame.html">
+<script>
+(function() {
+  'use strict';
+
+  /**
+   * PerformanceTest
+   *
+   * Instances of this class are given all of the information necessary to run
+   * a performance test. They run the tests, and aggregate the results.
+   */
+  function PerformanceTest(name, html, tags, totalRuns, iframe) {
+    this.name = name;
+    this.tags = tags;
+    this.html = html;
+    this.totalRuns = totalRuns;
+    this.iframe = iframe;
+    this.data = [];
+  }
+
+  PerformanceTest.prototype = {
+
+    /**
+     * Creates a data URI for a document that represents a single test run.
+     */
+    createTestUrl: function() {
+      var html = this.html.replace(/type="benchmark"/gi, '');
+      var parts = [
+        Polymer.SetupFrame.PREAMBLE,
+        html,
+        Polymer.SetupFrame.POSTAMBLE
+      ];
+      var mime = {
+        type: 'text/html'
+      };
+
+      return URL.createObjectURL(new Blob(parts, mime));
+    },
+
+    /**
+     * Kicks off a test run.
+     *
+     * @return {Promise} A promise that represents the eventual
+     * completion or timeout of the test run.
+     */
+    run: function() {
+      var that = this;
+
+      this.iframe.src = this.createTestUrl();
+
+      return new Promise(function(resolve, reject) {
+        var timeout = window.setTimeout(function() {
+          reject(new Error('Test timed out after 30 seconds.'));
+        }, 30000);
+
+        window.addEventListener('message', function onMessage(message) {
+					if (message.data.type !== 'test-run-result') {
+						return;
+					}
+
+          window.clearTimeout(timeout);
+          window.removeEventListener('message', onMessage);
+
+          that.data.push(message.data);
+          resolve(message.data);
+        });
+      }.bind(this)).catch(function(error) {
+        console.error('Test failed.', error);
+      }).then(function() {
+        URL.revokeObjectURL(this.iframe.src);
+      }.bind(this));
+    },
+
+    /**
+     * True if at least one run has started.
+     *
+     * @type {boolean}
+     */
+    get started() {
+      return !!this.iframe.src;
+    },
+
+    /**
+     * True if all test runs have completed.
+     *
+     * @type {boolean}
+     */
+    get complete() {
+      return this.data.length === this.totalRuns;
+    },
+
+    /**
+     * The mean average of all collected data.
+     *
+     * @type {number}
+     */
+    get average() {
+      return this.data.length && this.data.reduce(function (sum, datum) {
+        return sum + datum.elapsed;
+      }, 0) / this.data.length;
+    },
+
+    /**
+     * The same as `average`, but fixed to two decimal places.
+     *
+     * @type {number}
+     */
+    get fixedAverage() {
+      return this.average.toFixed(2);
+    },
+
+    /**
+     * An array of numbers corresponding to the `elapsed` property of the
+     * collected data.
+     *
+     * @type {Array}
+     */
+    get series() {
+      return this.data.map(function (result) {
+        return result.elapsed;
+      });
+    },
+
+    /**
+     * The statistical variance of the `series`.
+     *
+     * @type {number}
+     */
+    get variance() {
+      var series = this.series;
+      var average = this.average;
+
+      return series.length && series.reduce(function (variance, value) {
+        return variance + Math.pow(value - average, 2);
+      }, 0) / series.length;
+    },
+
+    /**
+     * The standard deviation of the `series`.
+     *
+     * @type {number}
+     */
+    get standardDeviation() {
+      return Math.sqrt(this.variance);
+    },
+
+    /**
+     * The same as `standardDeviation`, but fixed to two decimal places.
+     *
+     * @type {number}
+     */
+    get fixedStandardDeviation() {
+      return this.standardDeviation.toFixed(2);
+    },
+
+    /**
+     * A comparison function suitable for usage with `Array.prototype.sort`.
+     * `PerformanceTest` instances are compared by `average`.
+     *
+     * @param {PerformanceTest} other A `PerformanceTest` instance to
+     * compare to this one.
+     * @return {number} 1 if this average is greater than other's average, -1
+     * if it is lesser, and 0 if they are equal.
+     */
+    compareTo: function(other) {
+      var average = this.average;
+      var otherAverage = other.average;
+
+      if (average > otherAverage) {
+        return 1;
+      } else if (average < otherAverage) {
+        return -1;
+      }
+
+      return 0;
+    },
+
+    /**
+     * Provides a comparative ratio of the averages of two tests.
+     *
+     * @param {PerformanceTest} other A `PerformanceTest` instance to compare
+     * @return {number} The ratio of the two test's averages.
+     */
+    averageRelativeTo: function(other) {
+      if (!other) {
+        return null;
+      }
+
+      var otherAverage = other.average;
+
+      return (this.average - otherAverage) / otherAverage;
+    },
+
+    /**
+     * Creates an instance of a `PerformanceTest` initialized with the same
+     * parameters as this `PerformanceTest`.
+     *
+     * @return {PerformanceTest} A `PerformanceTest` instance.
+     */
+    createBlankCopy: function() {
+      return new Polymer.PerformanceTest(
+        this.name,
+        this.html,
+        this.tags,
+        this.totalRuns,
+        this.iframe
+      );
+    }
+  };
+
+  Polymer.PerformanceTest = PerformanceTest;
+})();
+</script>
