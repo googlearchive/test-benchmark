@@ -12,6 +12,8 @@ thing! https://github.com/PolymerLabs/tedium/issues
 
 -->
 
+[![Build status](https://travis-ci.org/PolymerElements/test-benchmark.svg?branch=master)](https://travis-ci.org/PolymerElements/test-benchmark)
+
 
 <!-- No docs for <performance-analysis> found. -->
 
