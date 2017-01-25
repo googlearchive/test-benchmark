@@ -1,16 +1,28 @@
 {
   "name": "performance-benchmark",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "authors": [
     "The Polymer Authors"
   ],
   "dependencies": {
-    "polymer": "polymer/polymer#^1.0.0",
-    "paper-styles": "polymerelements/paper-styles#^1.0.0",
-    "paper-material": "polymerelements/paper-material#^1.0.0",
+    "polymer": "Polymer/polymer#2.0-preview",
+    "paper-styles": "polymerelements/paper-styles#2.0-preview",
+    "paper-material": "polymerelements/paper-material#2.0-preview",
     "d3": "~3.5.5",
-    "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0",
-    "iron-flex-layout": "polymerelements/iron-flex-layout#^1.0.0"
+    "webcomponentsjs": "webcomponents/webcomponentsjs#v1",
+    "iron-flex-layout": "polymerelements/iron-flex-layout#2.0-preview"
   },
-  "ignore": []
+  "ignore": [],
+  "variants": {
+    "1.x": {
+      "dependencies": {
+        "polymer": "polymer/polymer#^1.0.0",
+        "paper-styles": "polymerelements/paper-styles#^1.0.0",
+        "paper-material": "polymerelements/paper-material#^1.0.0",
+        "d3": "~3.5.5",
+        "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0",
+        "iron-flex-layout": "polymerelements/iron-flex-layout#^1.0.0"
+      }
+    }
+  }
 }
